@@ -11,7 +11,9 @@ class ApiService {
 
     const config = {
       headers: {
-        'Content-Type': 'application/json',
+        ...(options.body instanceof FormData
+          ? {} // Let browser set headers for FormData
+          : { 'Content-Type': 'application/json' }),
         ...(token && { Authorization: `Bearer ${token}` }),
         ...options.headers,
       },
@@ -28,33 +30,29 @@ class ApiService {
     return response.json()
   }
 
-  // Auth endpoints
+  // ✅ Signup (JSON)
   async signup(email, password) {
-    const formData = new FormData()
-    formData.append('email', email)
-    formData.append('password', password)
-    
-    return this.request('/auth/signup', {
+    const res = await this.request('/auth/signup', {
       method: 'POST',
-      headers: {},
-      body: formData,
+      body: JSON.stringify({ email, password }),
     })
+    // return profile immediately
+    return this.getProfile(email)
   }
 
+  // ✅ Login (JSON)
   async login(email, password) {
-    const formData = new FormData()
-    formData.append('email', email)
-    formData.append('password', password)
-    
-    return this.request('/auth/login', {
+    const res = await this.request('/auth/login', {
       method: 'POST',
-      headers: {},
-      body: formData,
+      body: JSON.stringify({ email, password }),
     })
+    // return profile immediately
+    return this.getProfile(email)
   }
 
-  async getProfile() {
-    return this.request('/auth/me')
+  // ✅ Pass email to backend
+  async getProfile(email) {
+    return this.request(`/auth/me?email=${encodeURIComponent(email)}`)
   }
 
   // Upload endpoint
@@ -67,7 +65,6 @@ class ApiService {
 
     return this.request('/upload', {
       method: 'POST',
-      headers: {},
       body: formData,
     })
   }

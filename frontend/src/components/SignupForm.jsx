@@ -31,7 +31,9 @@ const SignupForm = () => {
       await signup(email, password)
       navigate('/')
     } catch (err) {
-      setError(err.message)
+      // ✅ Proper error handling
+      const errorMsg = err?.response?.data?.detail || err?.message || 'Signup failed'
+      setError(errorMsg)
     } finally {
       setLoading(false)
     }

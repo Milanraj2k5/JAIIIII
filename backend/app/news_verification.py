@@ -2,8 +2,13 @@ import os
 import requests
 import asyncio
 import aiohttp
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
+from fastapi import APIRouter, UploadFile, Form
+
 from .config import settings
+
+# Create FastAPI router
+router = APIRouter()
 
 class NewsVerification:
     """News verification using NewsAPI and fallback methods"""
@@ -12,7 +17,7 @@ class NewsVerification:
         self.newsapi_key = settings.NEWSAPI_KEY
         self.newsapi_enabled = settings.NEWSAPI_ENABLED
     
-    async def verify_news(self, filename: str, metadata: str = None) -> Dict[str, Any]:
+    async def verify_news(self, filename: str, metadata: Optional[str] = None) -> Dict[str, Any]:
         """Verify if content appears in news sources"""
         
         # Extract search terms from filename and metadata
@@ -23,7 +28,7 @@ class NewsVerification:
         else:
             return await self._verify_with_fallback(search_terms)
     
-    def _extract_search_terms(self, filename: str, metadata: str = None) -> List[str]:
+    def _extract_search_terms(self, filename: str, metadata: Optional[str] = None) -> List[str]:
         """Extract search terms from filename and metadata"""
         terms = []
         
@@ -90,13 +95,14 @@ class NewsVerification:
         """Fallback verification using simple web search simulation"""
         try:
             # Simulate news verification with deterministic results
-            # In a real implementation, you might scrape Google News or other sources
-            
-            # For demo purposes, return mock results based on search terms
             mock_articles = []
             
             # Simple heuristic: if terms contain common news keywords, return some results
-            news_keywords = ['news', 'breaking', 'update', 'report', 'statement', 'official', 'government', 'president', 'minister']
+            news_keywords = [
+                'news', 'breaking', 'update', 'report',
+                'statement', 'official', 'government',
+                'president', 'minister'
+            ]
             
             if any(keyword in ' '.join(search_terms).lower() for keyword in news_keywords):
                 mock_articles = [
@@ -125,3 +131,17 @@ class NewsVerification:
                 "search_terms": search_terms,
                 "service": "error"
             }
+
+# ---------------------------
+# FastAPI Endpoints
+# ---------------------------
+news_verifier = NewsVerification()
+
+@router.post("/verify")
+async def verify_news_api(file: UploadFile, metadata: Optional[str] = Form(None)):
+    """
+    API endpoint for verifying news content.
+    Accepts a file (e.g. video/image/document) and optional metadata (text description).
+    """
+    result = await news_verifier.verify_news(file.filename, metadata)
+    return result
