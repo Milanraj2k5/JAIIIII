@@ -55,8 +55,8 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    // return profile immediately
-    return this.getProfile(email)
+    // Return auth response so caller can persist token
+    return res
   }
 
   // ✅ Login (JSON)
@@ -65,13 +65,16 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    // return profile immediately
-    return this.getProfile(email)
+    // Return auth response so caller can persist token
+    return res
   }
 
   // ✅ Pass email to backend
   async getProfile(email) {
-    return this.request(`/auth/me?email=${encodeURIComponent(email)}`)
+    if (email) {
+      return this.request(`/auth/me?email=${encodeURIComponent(email)}`)
+    }
+    return this.request('/auth/me')
   }
 
   // Upload endpoint
@@ -82,7 +85,7 @@ class ApiService {
       formData.append('metadata', metadata)
     }
 
-    return this.request('/upload', {
+    return this.request('/api/upload', {
       method: 'POST',
       body: formData,
     })
@@ -90,16 +93,16 @@ class ApiService {
 
   // Results endpoints
   async getResult(resultId) {
-    return this.request(`/results/${resultId}`)
+    return this.request(`/api/results/${resultId}`)
   }
 
   async getHistory(skip = 0, limit = 20) {
-    return this.request(`/history?skip=${skip}&limit=${limit}`)
+    return this.request(`/api/history?skip=${skip}&limit=${limit}`)
   }
 
   // Blockchain endpoint
   async verifyOnBlockchain(resultId) {
-    return this.request(`/blockchain/verify/${resultId}`, {
+    return this.request(`/api/blockchain/verify/${resultId}`, {
       method: 'POST',
     })
   }

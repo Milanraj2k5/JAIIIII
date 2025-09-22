@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useAuth } from '../utils/auth'
 import { useNavigate } from 'react-router-dom'
 import { Upload, AlertCircle } from 'lucide-react'
+import api from '../services/api'
 
 const UploadForm = () => {
   const [file, setFile] = useState(null)
@@ -51,44 +52,9 @@ const UploadForm = () => {
       }
 
       console.info('[UploadForm] submitting file', { name: file.name, type: file.type, size: file.size })
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      })
-
-      if (!response.ok) {
-        const contentType = response.headers.get('content-type') || ''
-        let detail = `HTTP ${response.status}`
-        if (contentType.includes('application/json')) {
-          const errorData = await response.json().catch(() => ({}))
-          detail = errorData.detail || detail
-          console.warn('[UploadForm] upload error json', errorData)
-        } else {
-          const text = await response.text().catch(() => '')
-          detail = text || detail
-          console.warn('[UploadForm] upload error text', text)
-        }
-        throw new Error(detail || 'Upload failed')
-      }
-
-      let result
-      const contentType = response.headers.get('content-type') || ''
-      if (contentType.includes('application/json')) {
-        result = await response.json()
-      } else {
-        const text = await response.text()
-        try {
-          result = JSON.parse(text)
-        } catch (err) {
-          console.warn('[UploadForm] non-JSON upload response', text)
-          throw new Error('Unexpected non-JSON response from server')
-        }
-      }
-      console.info('[UploadForm] upload success', result)
-      navigate(`/result/${result.result_id}`)
+      const res = await api.uploadFile(file, metadata)
+      console.info('[UploadForm] upload success', res)
+      navigate(`/result/${res.result_id}`)
     } catch (err) {
       setError(err.message)
     } finally {

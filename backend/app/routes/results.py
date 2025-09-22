@@ -3,6 +3,8 @@ import uuid
 import time
 from datetime import datetime, timezone
 from flask import Blueprint, request, jsonify
+import logging
+import logging
 from werkzeug.utils import secure_filename
 from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 
@@ -16,6 +18,8 @@ import jwt
 
 
 bp = Blueprint("results", __name__)
+logger = logging.getLogger(__name__)
+logger = logging.getLogger(__name__)
 
 
 def _jwt_secret() -> str:
@@ -48,8 +52,24 @@ def _infer_media_type(filename: str, mimetype: str | None) -> str:
     return "unknown"
 
 
-@bp.route("/upload", methods=["POST"])
+@bp.route("/upload", methods=["OPTIONS"])  # explicit preflight handler
+def upload_options():
+    # Flask-CORS should add headers; return empty 204
+    return ("", 204)
+
+
+@bp.route("/upload", methods=["POST", "OPTIONS"])
 def upload_and_analyze():
+    if request.method == "OPTIONS":
+        # CORS preflight
+        return ("", 204)
+
+    logger.info(
+        "/api/upload hit: method=%s headers=%s",
+        request.method,
+        {k: v for k, v in request.headers.items() if k.lower() in {"authorization", "content-type", "origin", "host"}},
+    )
+    logger.info("/api/upload hit: method=%s headers=%s", request.method, dict(request.headers))
     # Auth
     email = _get_user_from_auth()
     if not email:

@@ -37,7 +37,9 @@ export const AuthProvider = ({ children }) => {
   const signup = async (email, password) => {
     try {
       const response = await api.signup(email, password)
-      localStorage.setItem('token', response.access_token)
+      if (response && response.access_token) {
+        localStorage.setItem('token', response.access_token)
+      }
       const userData = await api.getProfile()
       setUser(userData)
       return response
@@ -49,7 +51,9 @@ export const AuthProvider = ({ children }) => {
   const login = async (email, password) => {
     try {
       const response = await api.login(email, password)
-      localStorage.setItem('token', response.access_token)
+      if (response && response.access_token) {
+        localStorage.setItem('token', response.access_token)
+      }
       const userData = await api.getProfile()
       setUser(userData)
       return response

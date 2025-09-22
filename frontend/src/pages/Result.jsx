@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { ArrowLeft, ExternalLink, CheckCircle, XCircle, AlertTriangle } from 'lucide-react'
 import TrustScoreChart from '../components/TrustScoreChart'
 import { useAuth } from '../utils/auth'
+import api from '../services/api'
 
 const Result = () => {
   const { id } = useParams()
@@ -20,17 +21,7 @@ const Result = () => {
 
     const fetchResult = async () => {
       try {
-        const response = await fetch(`/api/results/${id}`, {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch result')
-        }
-
-        const data = await response.json()
+        const data = await api.getResult(id)
         setResult(data)
       } catch (err) {
         setError(err.message)
