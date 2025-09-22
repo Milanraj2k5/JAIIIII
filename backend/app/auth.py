@@ -6,7 +6,8 @@ from passlib.context import CryptContext
 from . import models
 from .database import get_db
 
-router = APIRouter(prefix="/auth", tags=["auth"])
+# ✅ Remove the "/auth" prefix, we'll handle it in main.py
+router = APIRouter(tags=["auth"])
 
 # Password hashing
 pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
