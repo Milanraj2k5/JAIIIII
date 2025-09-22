@@ -10,6 +10,9 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'mp4', 'mov', 'avi', 'mkv', 'wav', 'mp3'}
     MODEL_PATH = os.environ.get('MODEL_PATH', './models')
     PYTHON_SERVICE_API_KEY = os.environ.get('PYTHON_SERVICE_API_KEY', '')
+    IMAGE_FAKE_THRESHOLD = float(os.environ.get('IMAGE_FAKE_THRESHOLD', '0.8'))
+    ML_CLASSIFIER_ENABLED = os.environ.get('ML_CLASSIFIER_ENABLED', 'false')
+    EXTERNAL_VERIFICATION_ENABLED = os.environ.get('EXTERNAL_VERIFICATION_ENABLED', 'false')
     
     # MongoDB (Atlas) configuration
     MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')

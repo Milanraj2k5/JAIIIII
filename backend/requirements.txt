@@ -15,3 +15,7 @@ gevent-websocket
 PyJWT
 pymongo
 cloudinary
+scikit-learn
+pandas
+joblib
+imagehash
