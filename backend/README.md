@@ -114,6 +114,19 @@ The service will be available at `http://localhost:5000`
 
 ### API Endpoints
 
+#### Authentication
+
+Base path: both `/auth/*` and `/api/auth/*` are available for convenience.
+
+- POST `/auth/signup` — Body: `{ "email": string, "password": string }` — returns `{ access_token, token_type }`
+- POST `/auth/login` — Body: `{ "email": string, "password": string }` — returns `{ access_token, token_type }`
+- GET `/auth/me` — Header: `Authorization: Bearer <token>` — returns user profile `{ email, ... }`
+
+Notes:
+- Passwords are hashed (Werkzeug) before storage.
+- Tokens are JWT (HS256). Configure with `JWT_SECRET` and `JWT_EXPIRES_IN_MINUTES`.
+- Backing store: MongoDB (Atlas recommended). Configure `MONGODB_URI` and `MONGODB_DB_NAME` in `.env`.
+
 #### Health Check
 
 ```bash
@@ -173,26 +186,21 @@ The API is designed to work seamlessly with web frontends. For a complete exampl
 
 ### Environment Variables
 
-Create a `.env` file in the root directory:
+Create a `.env` file in the backend directory (see `.env.example`):
 
 ```env
-# Server Configuration
-PORT=5000
-DEBUG=True
+# General
 SECRET_KEY=your-secret-key-here
+ENVIRONMENT=development
 
-# Model Configuration
-DEFAULT_THRESHOLD=0.5
-MAX_FILE_SIZE=100MB
-SUPPORTED_FORMATS=jpg,jpeg,png,mp4,avi,wav,mp3
+# MongoDB Atlas (example URI format)
+# MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.abcde.mongodb.net/?retryWrites=true&w=majority
+MONGODB_URI=
+MONGODB_DB_NAME=truthlens
 
-# Storage Configuration
-TEMP_DIR=./temp
-LOG_LEVEL=INFO
-
-# GPU Configuration (optional)
-USE_GPU=True
-CUDA_DEVICE=0
+# JWT
+JWT_SECRET=your-jwt-secret-here
+JWT_EXPIRES_IN_MINUTES=60
 ```
 
 ### Advanced Configuration
@@ -213,6 +221,12 @@ class Config:
     # Performance tuning
     WORKER_THREADS = 4
     ENABLE_CACHING = True
+
+   # Database / Auth
+   MONGODB_URI = os.environ.get('MONGODB_URI', 'mongodb://localhost:27017')
+   MONGODB_DB_NAME = os.environ.get('MONGODB_DB_NAME', 'truthlens')
+   JWT_SECRET = os.environ.get('JWT_SECRET', SECRET_KEY)
+   JWT_EXPIRES_IN_MINUTES = int(os.environ.get('JWT_EXPIRES_IN_MINUTES', '60'))
 ```
 
 ---

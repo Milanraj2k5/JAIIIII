@@ -20,14 +20,33 @@ class ApiService {
       ...options,
     }
 
+    console.info('[API] request', { url, method: config.method || 'GET', headers: config.headers })
     const response = await fetch(url, config)
+    const contentType = response.headers.get('content-type') || ''
+    console.info('[API] response', { url, status: response.status, contentType })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+      let errorPayload = {}
+      if (contentType.includes('application/json')) {
+        errorPayload = await response.json().catch(() => ({}))
+      } else {
+        const text = await response.text().catch(() => '')
+        errorPayload = { detail: text }
+      }
+      console.warn('[API] error payload', errorPayload)
+      throw new Error(errorPayload.detail || `HTTP error! status: ${response.status}`)
     }
 
-    return response.json()
+    if (contentType.includes('application/json')) {
+      return response.json()
+    }
+    // Fallback to text for endpoints that may return no content or plain text
+    const text = await response.text()
+    try {
+      return JSON.parse(text)
+    } catch {
+      return { raw: text }
+    }
   }
 
   // ✅ Signup (JSON)

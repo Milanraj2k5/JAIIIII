@@ -10,8 +10,14 @@ def create_app(config_class=Config):
     app = Flask(__name__)
     app.config.from_object(config_class)
     
-    # Enable CORS
-    CORS(app)
+    # Enable CORS for all origins and common headers
+    CORS(
+        app,
+        resources={r"/*": {"origins": "*"}},
+        allow_headers=["Content-Type", "Authorization"],
+        expose_headers=["Content-Type", "Authorization"],
+        methods=["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"],
+    )
     
     # Initialize SocketIO with deployment-friendly settings
     # Try different async modes based on environment
@@ -47,11 +53,14 @@ def create_app(config_class=Config):
     from app.routes.analysis import bp as analysis_bp
     from app.routes.health import bp as health_bp
     from app.routes.auth import bp as auth_bp
+    from app.routes.results import bp as results_bp
     
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(health_bp, url_prefix='/api')
-    app.register_blueprint(auth_bp, url_prefix='/api')
+    app.register_blueprint(results_bp, url_prefix='/api')
+    # Register auth under both /api/auth/* and /auth/* with unique names
+    app.register_blueprint(auth_bp, url_prefix='/api', name='auth_api')
     # Also expose auth without /api prefix to match current frontend usage
-    app.register_blueprint(auth_bp, url_prefix='')
+    app.register_blueprint(auth_bp, url_prefix='', name='auth_public')
     
     return app

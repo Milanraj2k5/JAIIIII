@@ -4,6 +4,7 @@ import os
 from flask import Blueprint, jsonify, request
 from werkzeug.security import generate_password_hash, check_password_hash
 import jwt
+from pymongo.errors import PyMongoError, ServerSelectionTimeoutError
 
 from app.utils.db import get_users_collection
 
@@ -46,14 +47,17 @@ def signup():
     if len(password) < 6:
         return jsonify({"detail": "Password must be at least 6 characters"}), 400
 
-    users = get_users_collection()
-    # Ensure index on email unique
     try:
-        users.create_index("email", unique=True)
-    except Exception:
-        pass
+        users = get_users_collection()
+        # Ensure index on email unique
+        try:
+            users.create_index("email", unique=True)
+        except Exception:
+            pass
 
-    existing = users.find_one({"email": email})
+        existing = users.find_one({"email": email})
+    except (ServerSelectionTimeoutError, PyMongoError) as e:
+        return jsonify({"detail": "Database unavailable", "error": str(e)}), 503
     if existing:
         return jsonify({"detail": "Email already registered"}), 409
 
@@ -64,7 +68,10 @@ def signup():
         "created_at": datetime.utcnow(),
         "updated_at": datetime.utcnow(),
     }
-    users.insert_one(user_doc)
+    try:
+        users.insert_one(user_doc)
+    except (ServerSelectionTimeoutError, PyMongoError) as e:
+        return jsonify({"detail": "Database unavailable", "error": str(e)}), 503
 
     token = _create_token(email)
     return jsonify({"access_token": token, "token_type": "bearer"}), 201
@@ -81,8 +88,11 @@ def login():
     if not email or not password:
         return jsonify({"detail": "Email and password are required"}), 400
 
-    users = get_users_collection()
-    user = users.find_one({"email": email})
+    try:
+        users = get_users_collection()
+        user = users.find_one({"email": email})
+    except (ServerSelectionTimeoutError, PyMongoError) as e:
+        return jsonify({"detail": "Database unavailable", "error": str(e)}), 503
     if not user or not check_password_hash(user.get("password_hash", ""), password):
         return jsonify({"detail": "Invalid email or password"}), 401
 
@@ -112,8 +122,11 @@ def me():
     if not email:
         return jsonify({"detail": "Unauthorized"}), 401
 
-    users = get_users_collection()
-    user = users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    try:
+        users = get_users_collection()
+        user = users.find_one({"email": email}, {"_id": 0, "password_hash": 0})
+    except (ServerSelectionTimeoutError, PyMongoError) as e:
+        return jsonify({"detail": "Database unavailable", "error": str(e)}), 503
     if not user:
         # If JWT is valid but user doc missing, still return basic profile
         user = {"email": email}

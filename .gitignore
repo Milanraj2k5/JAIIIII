@@ -60,3 +60,5 @@ logs/
 blockchain/cache/
 blockchain/artifacts/
 blockchain/deployments/
+backend/.env.example
+backend/.env.example
