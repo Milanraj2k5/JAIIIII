@@ -46,8 +46,12 @@ def create_app(config_class=Config):
     # Register blueprints
     from app.routes.analysis import bp as analysis_bp
     from app.routes.health import bp as health_bp
+    from app.routes.auth import bp as auth_bp
     
     app.register_blueprint(analysis_bp, url_prefix='/api')
     app.register_blueprint(health_bp, url_prefix='/api')
+    app.register_blueprint(auth_bp, url_prefix='/api')
+    # Also expose auth without /api prefix to match current frontend usage
+    app.register_blueprint(auth_bp, url_prefix='')
     
     return app

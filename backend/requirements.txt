@@ -12,3 +12,5 @@ numpy
 scipy
 gevent
 gevent-websocket
+PyJWT
+pymongo
