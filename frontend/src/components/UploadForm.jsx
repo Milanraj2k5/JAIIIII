@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { useAuth } from '../utils/auth'
 import { useNavigate } from 'react-router-dom'
-import { Upload, AlertCircle } from 'lucide-react'
+import { Upload, AlertCircle, X, FileImage } from 'lucide-react'
+import api from '../services/api'
 
 const UploadForm = () => {
   const [file, setFile] = useState(null)
+  const [filePreview, setFilePreview] = useState(null)
   const [metadata, setMetadata] = useState('')
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(false)
@@ -33,7 +35,27 @@ const UploadForm = () => {
 
       setFile(selectedFile)
       setError('')
+
+      // Create preview for images
+      if (selectedFile.type.startsWith('image/')) {
+        const reader = new FileReader()
+        reader.onload = (e) => {
+          setFilePreview(e.target.result)
+        }
+        reader.readAsDataURL(selectedFile)
+      } else {
+        setFilePreview(null)
+      }
     }
+  }
+
+  const clearFile = () => {
+    setFile(null)
+    setFilePreview(null)
+    setError('')
+    // Reset the file input
+    const fileInput = document.getElementById('file')
+    if (fileInput) fileInput.value = ''
   }
 
   const handleSubmit = async (e) => {
@@ -50,21 +72,10 @@ const UploadForm = () => {
         formData.append('metadata', metadata)
       }
 
-      const response = await fetch('/api/upload', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${localStorage.getItem('token')}`
-        },
-        body: formData
-      })
-
-      if (!response.ok) {
-        const errorData = await response.json()
-        throw new Error(errorData.detail || 'Upload failed')
-      }
-
-      const result = await response.json()
-      navigate(`/result/${result.result_id}`)
+      console.info('[UploadForm] submitting file', { name: file.name, type: file.type, size: file.size })
+      const res = await api.uploadFile(file, metadata)
+      console.info('[UploadForm] upload success', res)
+      navigate(`/result/${res.result_id}`)
     } catch (err) {
       setError(err.message)
     } finally {
@@ -97,24 +108,77 @@ const UploadForm = () => {
             <label htmlFor="file" className="block text-sm font-medium text-gray-700 mb-2">
               Select File
             </label>
-            <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
-              <input
-                type="file"
-                id="file"
-                onChange={handleFileChange}
-                accept="image/*,video/*,audio/*"
-                className="hidden"
-              />
-              <label htmlFor="file" className="cursor-pointer">
-                <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-600">
-                  {file ? file.name : 'Click to select a file'}
-                </p>
-                <p className="text-sm text-gray-500 mt-2">
-                  Images: JPG, PNG (max 6MB) | Videos: MP4 (max 50MB) | Audio: MP3, WAV (max 20MB)
-                </p>
-              </label>
-            </div>
+            
+            {!file ? (
+              <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-primary-500 transition-colors">
+                <input
+                  type="file"
+                  id="file"
+                  onChange={handleFileChange}
+                  accept="image/*,video/*,audio/*"
+                  className="hidden"
+                />
+                <label htmlFor="file" className="cursor-pointer">
+                  <Upload className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600">Click to select a file</p>
+                  <p className="text-sm text-gray-500 mt-2">
+                    Images: JPG, PNG (max 6MB) | Videos: MP4 (max 50MB) | Audio: MP3, WAV (max 20MB)
+                  </p>
+                </label>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {/* File Info */}
+                <div className="bg-gray-50 border border-gray-200 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center space-x-3">
+                      <FileImage className="w-8 h-8 text-blue-500" />
+                      <div>
+                        <p className="font-medium text-gray-900">{file.name}</p>
+                        <p className="text-sm text-gray-500">
+                          {file.type} • {(file.size / (1024 * 1024)).toFixed(2)} MB
+                        </p>
+                      </div>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={clearFile}
+                      className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+                </div>
+
+                {/* Image Preview */}
+                {filePreview && (
+                  <div className="border border-gray-200 rounded-lg p-4">
+                    <h4 className="text-sm font-medium text-gray-700 mb-3">Preview</h4>
+                    <div className="relative">
+                      <img 
+                        src={filePreview} 
+                        alt="Preview"
+                        className="w-full h-auto max-h-64 object-contain rounded-lg border border-gray-100"
+                      />
+                    </div>
+                  </div>
+                )}
+
+                {/* Option to select different file */}
+                <div className="text-center">
+                  <input
+                    type="file"
+                    id="file-change"
+                    onChange={handleFileChange}
+                    accept="image/*,video/*,audio/*"
+                    className="hidden"
+                  />
+                  <label htmlFor="file-change" className="text-sm text-blue-600 hover:text-blue-800 cursor-pointer underline">
+                    Choose a different file
+                  </label>
+                </div>
+              </div>
+            )}
           </div>
 
           <div>

@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../utils/auth'
 import HistoryList from '../components/HistoryList'
 import { Upload } from 'lucide-react'
+import api from '../services/api'
 
 const History = () => {
   const navigate = useNavigate()
@@ -19,17 +20,7 @@ const History = () => {
 
     const fetchHistory = async () => {
       try {
-        const response = await fetch('/api/history', {
-          headers: {
-            'Authorization': `Bearer ${localStorage.getItem('token')}`
-          }
-        })
-
-        if (!response.ok) {
-          throw new Error('Failed to fetch history')
-        }
-
-        const data = await response.json()
+        const data = await api.getHistory()
         setResults(data)
       } catch (err) {
         setError(err.message)

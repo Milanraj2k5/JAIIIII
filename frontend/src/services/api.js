@@ -20,14 +20,33 @@ class ApiService {
       ...options,
     }
 
+    console.info('[API] request', { url, method: config.method || 'GET', headers: config.headers })
     const response = await fetch(url, config)
+    const contentType = response.headers.get('content-type') || ''
+    console.info('[API] response', { url, status: response.status, contentType })
 
     if (!response.ok) {
-      const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.detail || `HTTP error! status: ${response.status}`)
+      let errorPayload = {}
+      if (contentType.includes('application/json')) {
+        errorPayload = await response.json().catch(() => ({}))
+      } else {
+        const text = await response.text().catch(() => '')
+        errorPayload = { detail: text }
+      }
+      console.warn('[API] error payload', errorPayload)
+      throw new Error(errorPayload.detail || `HTTP error! status: ${response.status}`)
     }
 
-    return response.json()
+    if (contentType.includes('application/json')) {
+      return response.json()
+    }
+    // Fallback to text for endpoints that may return no content or plain text
+    const text = await response.text()
+    try {
+      return JSON.parse(text)
+    } catch {
+      return { raw: text }
+    }
   }
 
   // ✅ Signup (JSON)
@@ -36,8 +55,8 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    // return profile immediately
-    return this.getProfile(email)
+    // Return auth response so caller can persist token
+    return res
   }
 
   // ✅ Login (JSON)
@@ -46,13 +65,16 @@ class ApiService {
       method: 'POST',
       body: JSON.stringify({ email, password }),
     })
-    // return profile immediately
-    return this.getProfile(email)
+    // Return auth response so caller can persist token
+    return res
   }
 
   // ✅ Pass email to backend
   async getProfile(email) {
-    return this.request(`/auth/me?email=${encodeURIComponent(email)}`)
+    if (email) {
+      return this.request(`/auth/me?email=${encodeURIComponent(email)}`)
+    }
+    return this.request('/auth/me')
   }
 
   // Upload endpoint
@@ -63,7 +85,7 @@ class ApiService {
       formData.append('metadata', metadata)
     }
 
-    return this.request('/upload', {
+    return this.request('/api/upload', {
       method: 'POST',
       body: formData,
     })
@@ -71,16 +93,16 @@ class ApiService {
 
   // Results endpoints
   async getResult(resultId) {
-    return this.request(`/results/${resultId}`)
+    return this.request(`/api/results/${resultId}`)
   }
 
   async getHistory(skip = 0, limit = 20) {
-    return this.request(`/history?skip=${skip}&limit=${limit}`)
+    return this.request(`/api/history?skip=${skip}&limit=${limit}`)
   }
 
   // Blockchain endpoint
   async verifyOnBlockchain(resultId) {
-    return this.request(`/blockchain/verify/${resultId}`, {
+    return this.request(`/api/blockchain/verify/${resultId}`, {
       method: 'POST',
     })
   }

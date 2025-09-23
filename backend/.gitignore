@@ -1,0 +1,29 @@
+cat <<EOL > .gitignore
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+.env.example
+# Virtual environment
+venv/
+.env
+
+# Logs and temp
+*.log
+temp/
+*.sqlite3
+
+# IDE settings
+.vscode/
+.idea/
+*.swp
+.DS_Store
+
+# Build artifacts
+dist/
+build/
+.eggs/
+*.egg-info/
+EOL
